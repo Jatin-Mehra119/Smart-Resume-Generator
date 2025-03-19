@@ -1,0 +1,5 @@
+streamlit
+groq
+Unidecode
+markdown2
+pdfkit
