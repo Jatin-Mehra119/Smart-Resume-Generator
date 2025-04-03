@@ -39,7 +39,7 @@ def generate_description(readme_content, job_description):
 def generate_category(readme_content, job_description):
     """Classify project into specific category"""
     prompt = f"""Classify this project into ONE category:
-    [Data Science, Data Analyst, Web Dev, Backend Dev, Frontend Dev, Full Stack, DevOps, ML]
+    like = [Data Science, Data Analyst, Web Dev, Backend Dev, Frontend Dev, Full Stack, DevOps, ML, Java Dev, JS Dev, Python Dev, Mobile Dev, Cloud, Security, QA, Database, Embedded, Networking, AI, Robotics, IoT, Blockchain, AR/VR, Game Dev, UI/UX, Tech Writing, Research, Other]
     
     README: {readme_content[:4000]}
     
@@ -100,7 +100,7 @@ def generate_resume(resume_data):
 
     TECHNICAL SKILLS:
     - Extract and list the most relevant technical skills from the project descriptions, work experience, and education.
-    - Prioritize skills mentioned in the job description: {resume_data['job_description'][:1000]}
+    - Prioritize skills mentioned in the job description: {resume_data['job_description'][:2500]}
     - Include up to 10 skills, formatted as a concise, comma-separated list (e.g., Python, SQL, Docker, AWS).
     - If fewer than 5 skills are found, infer additional plausible skills based on project context (e.g., Git for GitHub projects).
 
