@@ -3,14 +3,14 @@ import requests
 from urllib.parse import urlparse
 import dotenv
 import os
-from groq import Groq
+from google import genai
 import markdown2
 import pdfkit
+from google.genai import types
 
-# Load environment variables and initialize Groq client
+# Load environment variables and configure Gemini AI
 dotenv.load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 # ========== Core Functions ==========
 
 def generate_description(readme_content, job_description):
@@ -28,13 +28,13 @@ def generate_description(readme_content, job_description):
     if job_description:
         prompt += f"\n\nAlign with this job description:\n{job_description[:1000]}"
     
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
-        max_tokens=3500
-    )
-    return response.choices[0].message.content.strip()
+    short_config = types.GenerateContentConfig(max_output_tokens=1550, temperature=0.3)
+    response = client.models.generate_content(
+        contents= prompt,
+        model="gemini-2.0-flash",
+        config=short_config
+        )
+    return response.text.strip()
 
 def generate_category(readme_content, job_description):
     """Classify project into specific category"""
@@ -46,14 +46,13 @@ def generate_category(readme_content, job_description):
     Job Context: {job_description[:1000] or "General technical role"}
     
     Respond ONLY with the category name."""
-    
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-        max_tokens=2050
-    )
-    return response.choices[0].message.content.strip()
+    short_config = types.GenerateContentConfig(max_output_tokens=650, temperature=0.3)
+    response = client.models.generate_content(
+        contents= prompt,
+        model="gemini-2.0-flash",
+        config=short_config
+        )
+    return response.text.strip()
 
 def generate_pdf_from_markdown(markdown_text):
     """Convert markdown to PDF"""
@@ -79,50 +78,51 @@ def generate_pdf_from_markdown(markdown_text):
     return pdfkit.from_string(full_html, False)
 
 def generate_resume(resume_data):
-    """Generate a highly tailored, professional resume text from structured data"""
-    prompt = f"""Generate a professional resume with the following structure and enhanced features:
+    """Generate a highly tailored, professional resume text in markdown format"""
+    prompt = f"""Generate a professional resume in markdown format with the following structure:
 
-    CONTACT INFORMATION:
-    - Name: {resume_data['name']}
-    - Email: {resume_data['email']}
-    - Phone: {resume_data.get('phone', 'Not provided')}
-    - GitHub: {resume_data.get('github', 'Not provided')}
-    - LinkedIn: {resume_data.get('linkedin', 'Not provided')}
+# CONTACT INFORMATION
+- Name: {resume_data['name']}
+- Email: {resume_data['email']}
+- Phone: {resume_data.get('phone', 'Not provided')}
+- GitHub: {resume_data.get('github', 'Not provided')}
+- LinkedIn: {resume_data.get('linkedin', 'Not provided')}
 
-    EDUCATION:
-    {resume_data['education']}
+# EDUCATION
+{resume_data['education']}
 
-    WORK EXPERIENCE:
-    {resume_data['work_experience'] or "No professional experience provided"}
+# WORK EXPERIENCE
+{resume_data['work_experience'] or "No professional experience provided"}
 
-    TECHNICAL PROJECTS:
-    {format_projects(resume_data['projects'])}
+# TECHNICAL PROJECTS
+{format_projects(resume_data['projects'])}
 
-    TECHNICAL SKILLS:
-    - Extract and list the most relevant technical skills from the project descriptions, work experience, and education.
-    - Prioritize skills mentioned in the job description: {resume_data['job_description'][:2500]}
-    - Include up to 10 skills, formatted as a concise, comma-separated list (e.g., Python, SQL, Docker, AWS).
-    - If fewer than 5 skills are found, infer additional plausible skills based on project context (e.g., Git for GitHub projects).
+# TECHNICAL SKILLS
+- Extract and list the most relevant technical skills from the project descriptions, work experience, and education.
+- Prioritize skills mentioned in the job description: {resume_data['job_description'][:2500]}
+- Include up to 10 skills, formatted as a concise, comma-separated list (e.g., Python, SQL, Docker, AWS).
+- If fewer than 5 skills are found, infer additional plausible skills based on project context (e.g., Git for GitHub projects).
 
-    Instructions:
-    - Adhere strictly to the specified section formats and ordering.
-    - For TECHNICAL PROJECTS:
-      - Generate exactly three bullet points per project based on the provided description.
-      - Optimize bullet points to emphasize measurable outcomes (e.g., "Improved X by Y%") where possible, inferring plausible metrics if not explicitly stated.
-      - Align language with the job description’s keywords and tone (e.g., 'engineered' vs 'built' if the job emphasizes engineering).
-    - Maintain a professional, concise tone throughout; avoid fluff or vague phrases (e.g., 'worked on').
-    - Use action verbs (e.g., Developed, Implemented, Optimized, Engineered, Deployed) to start each bullet point.
-    - Ensure ATS compatibility: avoid special characters, excessive formatting, or jargon not aligned with the job.
-    - Do not include any additional text, explanations, or sections beyond the specified structure.
-    - If data is missing or incomplete, use 'Not provided' or infer minimally as needed without fabrication."""
+Instructions:
+- Use markdown formatting: `#` for headers, `-` for bullet points.
+- For TECHNICAL PROJECTS:
+  - Generate exactly three bullet points per project based on the provided description.
+  - Optimize bullet points to emphasize measurable outcomes (e.g., "Improved X by Y%") where possible, inferring plausible metrics if not explicitly stated.
+  - Align language with the job description’s keywords and tone (e.g., 'engineered' vs 'built' if the job emphasizes engineering).
+- Maintain a professional, concise tone throughout; avoid fluff or vague phrases (e.g., 'worked on').
+- Use action verbs (e.g., Developed, Implemented, Optimized, Engineered, Deployed) to start each bullet point.
+- Ensure ATS compatibility: avoid special characters, excessive formatting, or jargon not aligned with the job.
+- Do not include any additional text, explanations, or sections beyond the specified structure.
+- If data is missing or incomplete, use 'Not provided' or infer minimally as needed without fabrication."""
+    
 
-    response = client.chat.completions.create(
-        model="llama3-8b-8192",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,  # Low temperature for consistency and professionalism
-        max_tokens=4500
-    )
-    return response.choices[0].message.content
+    short_config = types.GenerateContentConfig(max_output_tokens=6050, temperature=0.3)
+    response = client.models.generate_content(
+        contents= prompt,
+        model="gemini-2.0-flash",
+        config=short_config
+        )
+    return response.text
 
 def format_projects(projects):
     return "\n".join(
@@ -204,7 +204,7 @@ with st.expander("Personal Information", expanded=True):
         phone = cols[2].text_input("Phone", key="phone_field")
         github = cols[3].text_input("GitHub Profile", key="github_field")
         linkedin = st.text_input("LinkedIn Profile", key="linkedin_field")
-        skills = st.text_input("Skills", key="skills_field i.e. Python, SQL, Machine Learning, Docker, AWS, etc.")
+        skills = st.text_input("Skills", key="skills_field", placeholder="e.g., Python, SQL, Machine Learning, Docker, AWS")
         education = st.text_area("Education*", 
             placeholder="e.g., BS in Computer Science, XYZ University, 2018-2022", 
             key="edu_field")

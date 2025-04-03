@@ -3,3 +3,4 @@ groq
 Unidecode
 markdown2
 pdfkit
+google-genai==1.7.0
