@@ -2,5 +2,7 @@ streamlit
 groq
 Unidecode
 markdown2
-pdfkit
+pdfkit>=1.0.0
 google-genai==1.7.0
+fastapi
+uvicorn
