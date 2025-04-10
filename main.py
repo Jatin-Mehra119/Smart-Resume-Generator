@@ -15,6 +15,7 @@ import pdfkit
 from google.genai import types
 import tempfile
 import dotenv
+from datetime import datetime
 # Load environment variables from .env file
 dotenv.load_dotenv()
 
@@ -139,8 +140,8 @@ async def generate_category_endpoint(request: GenerateCategoryRequest):
 @app.post("/api/generate_resume")
 async def generate_resume_endpoint(resume_data: ResumeData):
     try:
-        prompt = f"""Generate a professional resume in markdown format with the following structure:
-
+        prompt = f"""Generate a professional resume in markdown format with the following structure, optimized for relevance to the job description below.
+Job description: {resume_data.job_description[:4500]}
 # CONTACT INFORMATION
 - Name: {resume_data.name}
 - Email: {resume_data.email}
@@ -148,32 +149,37 @@ async def generate_resume_endpoint(resume_data: ResumeData):
 - GitHub: {resume_data.github or 'Not provided'}
 - LinkedIn: {resume_data.linkedin or 'Not provided'}
 
-# EDUCATION
-{resume_data.education}
+# OBJECTIVE
+Craft a concise, role-focused objective (2-3 lines) summarizing the candidate's intent and qualifications. Tailor this section based on the job description provided below and the candidate's strengths in projects, education, or experience.
 
-# WORK EXPERIENCE (Remove this Part if not provided)
-{resume_data.work_experience or "No professional experience provided"}
+# EDUCATION
+{resume_data.education} # Format as: Degree, Major, University, Year.
+Example:'BSc in Computer Science, XYZ University, 2023
+         Msc in Data Science, ABC University, 2024'
+
+{f"# WORK EXPERIENCE\\n{resume_data.work_experience}" if resume_data.work_experience else ""}
 
 # TECHNICAL PROJECTS
 {format_projects(resume_data.projects)}
 
 # TECHNICAL SKILLS
 - Extract and list the most relevant technical skills from the project descriptions, work experience, and education.
-- Prioritize skills mentioned in the job description: {resume_data.job_description[:4500]}
-- Include up to 10 skills, formatted as a concise, comma-separated list (e.g., Python, SQL, Docker, AWS).
-- If fewer than 5 skills are found, infer additional plausible skills based on project context (e.g., Git for GitHub projects).
+- Prioritize skills that match the job description.
+- Include up to 10 skills in a comma-separated list (e.g., Python, SQL, Docker, AWS).
+- If fewer than 5 skills are found, infer additional plausible skills based on context (e.g., Git if GitHub is mentioned).
 
 Instructions:
 - Use markdown formatting: `#` for headers, `-` for bullet points.
 - For TECHNICAL PROJECTS:
-  - Generate exactly three bullet points per project based on the provided description.
-  - Optimize bullet points to emphasize measurable outcomes (e.g., "Improved X by Y%") where possible, inferring plausible metrics if not explicitly stated.
-  - Align language with the job description's keywords and tone (e.g., 'engineered' vs 'built' if the job emphasizes engineering).
-- Maintain a professional, concise tone throughout; avoid fluff or vague phrases (e.g., 'worked on').
-- Use action verbs (e.g., Developed, Implemented, Optimized, Engineered, Deployed) to start each bullet point.
-- Ensure ATS compatibility: avoid special characters, excessive formatting, or jargon not aligned with the job.
-- Do not include any additional text, explanations, or sections beyond the specified structure.
-- If data is missing or incomplete, use 'Not provided' or infer minimally as needed without fabrication."""
+- Write exactly three bullet points per project based on the description.
+- Emphasize measurable outcomes (e.g., “Increased accuracy by 20%”), inferring realistic metrics where applicable.
+- Align language and terminology with keywords from the job description.
+- Maintain a professional, concise tone throughout.
+- Start each bullet point with strong action verbs (e.g., Developed, Deployed, Engineered).
+- Avoid vague or generic phrases (e.g., “worked on”, “helped with”).
+- Ensure the resume is ATS-friendly: no special characters, excessive formatting, or unrelated jargon.
+- Do not include any text, explanation, or sections outside the defined structure.
+"""
         
         config = types.GenerateContentConfig(max_output_tokens=6050, temperature=0.3)
         response = client.models.generate_content(
@@ -217,29 +223,147 @@ async def get_readme_content(url: str):
 @app.post("/api/generate_pdf")
 async def generate_pdf_endpoint(request: GeneratePDFRequest):
     try:
-        html = markdown2.markdown(request.markdown_text)
+        # Convert markdown to HTML with extra features enabled
+        html = markdown2.markdown(request.markdown_text, extras=["tables", "cuddled-lists", "header-ids"])
+        
+        # Create a professional and elegant HTML template
         full_html = f"""
         <!DOCTYPE html>
         <html>
         <head>
           <meta charset="utf-8">
           <style>
-            body {{ font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }}
-            h1, h2, h3 {{ color: #2c3e50; }}
-            h1 {{ font-size: 24px; margin-bottom: 20px; }}
-            h2 {{ font-size: 18px; margin-top: 20px; margin-bottom: 10px; }}
-            ul {{ margin-left: 20px; }}
+            @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Open+Sans:wght@300;400;600&display=swap');
+            
+            body {{
+                font-family: 'Open Sans', Arial, sans-serif;
+                color: #333;
+                line-height: 1.6;
+                margin: 0;
+                padding: 12px 10px;
+                max-width: 100%;
+                font-size: 11pt;
+                background: #fff;
+            }}
+            
+            .resume-container {{
+                max-width: 8.5in;
+                margin: 0 auto;
+                border: none;
+                box-shadow: none;
+            }}
+            
+            h1 {{
+                font-family: 'Roboto', sans-serif;
+                font-size: 18pt;
+                font-weight: 700;
+                color: #1a365d;
+                margin-bottom: 10px;
+                padding-bottom: 5px;
+                border-bottom: 2px solid #3182ce;
+            }}
+            
+            h2 {{
+                font-family: 'Roboto', sans-serif;
+                font-size: 14pt;
+                font-weight: 600;
+                color: #2c5282;
+                margin-top: 20px;
+                margin-bottom: 10px;
+                padding-bottom: 3px;
+                border-bottom: 1px solid #bee3f8;
+            }}
+            
+            ul {{
+                margin-top: 8px;
+                margin-left: 20px;
+                padding-left: 0;
+            }}
+            
+            ul li {{
+                margin-bottom: 6px;
+                list-style-type: square;
+            }}
+            
+            /* Contact information section */
+            .contact-info {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                margin-bottom: 15px;
+                font-size: 10pt;
+            }}
+            
+            .contact-info p {{
+                margin: 0;
+                display: inline-block;
+            }}
+            
+            /* Education section */
+            .education-entry {{
+                margin-bottom: 12px;
+            }}
+            
+            /* Projects section */
+            .project-title {{
+                font-weight: 600;
+            }}
+            
+            /* Skills section */
+            .skills-list {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 8px;
+            }}
+            
+            .skill-item {{
+                background-color: #e2e8f0;
+                padding: 3px 8px;
+                border-radius: 3px;
+                font-size: 9pt;
+            }}
+            
+            /* Page break handling */
+            .page-break {{
+                page-break-after: always;
+            }}
+            
+            /* Print-specific styles */
+            @media print {{
+                body {{
+                    padding: 0;
+                    margin: 12mm 10mm 12mm 10mm;
+                }}
+                
+                .resume-container {{
+                    box-shadow: none;
+                    border: none;
+                }}
+            }}
           </style>
         </head>
         <body>
-          {html}
+          <div class="resume-container">
+            {html}
+          </div>
         </body>
         </html>
         """
         
+        # Configure PDF rendering options for better quality
         options = {
             'quiet': '',
             'encoding': "UTF-8",
+            'enable-local-file-access': '',
+            'margin-top': '12mm',     # 1.2 cm top margin
+            'margin-right': '10mm',   # 1.0 cm right margin
+            'margin-bottom': '12mm',  # 1.2 cm bottom margin
+            'margin-left': '10mm',    # 1.0 cm left margin
+            'page-size': 'Letter',
+            'dpi': '300',
+            'image-quality': '100',
+            'enable-smart-shrinking': '',
         }
         
         with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
