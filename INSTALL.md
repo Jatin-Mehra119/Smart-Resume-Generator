@@ -62,15 +62,11 @@ You should see version information if the installation was successful.
 
 ## Running the Application
 
-1. Start the backend API server:
+1. Start the main App:
    ```bash
    python main.py
    ```
 
-2. In a separate terminal, start the Streamlit frontend:
-   ```bash
-   streamlit run app.py
-   ```
 
 3. Open your browser and navigate to the URL provided by Streamlit (typically http://localhost:8501)
 

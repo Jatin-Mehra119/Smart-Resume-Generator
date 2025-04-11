@@ -404,6 +404,6 @@ def format_projects(projects: List[ProjectData]) -> str:
 
 if __name__ == "__main__":
     import uvicorn
-    # Get port from environment variable or use default 8000
-    port = int(os.environ.get("PORT", 8000))
+    # Get port from environment variable or use default 8000 7860 FOR HUGGINGFACE SPACES.
+    port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)

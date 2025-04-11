@@ -23,14 +23,17 @@ A cutting-edge AI-powered tool that helps job seekers create tailored, professio
 
 - Python 3.8+
 - Streamlit
-- Groq API key
+- Google-genai==1.7.0
+- fastapi
+- uvicorn
 - PDFKit (with wkhtmltopdf installed)
 - Internet connection for GitHub repository access
+- Markdown2
 
 ## Technical Details
 
 The application leverages:
-- **Groq LLM API**: Powers the intelligent project analysis and resume generation
+- **Google Genai API**: Powers the intelligent project analysis and resume generation
 - **Streamlit**: Provides the interactive web interface
 - **GitHub API**: Fetches repository READMEs to analyze your projects
 - **Markdown to PDF**: Converts the generated resume to a professional PDF document
