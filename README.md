@@ -1,4 +1,6 @@
 # Smart Resume Generator
+Live - [Smart Resume Generator](https://huggingface.co/spaces/jatinmehra/Smart-Resume-Generator)
+
 
 A cutting-edge AI-powered tool that helps job seekers create tailored, professional resumes by analyzing GitHub projects and aligning them with target job descriptions.
 
