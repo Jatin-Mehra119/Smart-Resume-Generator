@@ -3,13 +3,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Configuration - No need for separate API base URL now
     const API_BASE_URL = ''; // Use relative URLs
     
+    // Debug: Check if cover letter elements exist
+    console.log('Cover letter button exists:', !!document.getElementById('generate-cover-letter-btn'));
+    console.log('Company name input exists:', !!document.getElementById('companyName'));
+    
     // State management
     let appState = {
         currentStep: 1,
         personalInfo: {},
         projects: [],
         resumeMarkdown: null,
-        pdfData: null
+        pdfData: null,
+        coverLetter: null
     };
     
     // DOM Elements
@@ -162,6 +167,50 @@ document.addEventListener('DOMContentLoaded', function() {
             'text/markdown'
         );
     });
+    
+    // Cover Letter Generation
+    const coverLetterBtn = document.getElementById('generate-cover-letter-btn');
+    if (coverLetterBtn) {
+        coverLetterBtn.addEventListener('click', function() {
+            console.log('Cover letter button clicked!'); // Debug log
+            
+            const companyName = document.getElementById('companyName').value.trim();
+            console.log('Company name:', companyName); // Debug log
+            
+            if (!companyName) {
+                showAlert('Please enter a company name to generate a cover letter', 'danger');
+                document.getElementById('companyName').classList.add('is-invalid');
+                return;
+            }
+            
+            document.getElementById('companyName').classList.remove('is-invalid');
+            
+            // Show alert when cover letter generation starts
+            showAlert(`Starting to generate cover letter for ${companyName}...`, 'info');
+            
+            generateCoverLetter(companyName);
+        });
+    } else {
+        console.error('Cover letter button not found!');
+    }
+    
+    const downloadCoverLetterBtn = document.getElementById('download-cover-letter-btn');
+    if (downloadCoverLetterBtn) {
+        downloadCoverLetterBtn.addEventListener('click', function() {
+            if (appState.coverLetter) {
+                const companyName = document.getElementById('companyName').value.trim();
+                downloadFile(
+                    appState.coverLetter, 
+                    `${appState.personalInfo.name.replace(/\s+/g, '_')}_Cover_Letter_${companyName.replace(/\s+/g, '_')}.txt`, 
+                    'text/plain'
+                );
+            } else {
+                showAlert('No cover letter available to download', 'warning');
+            }
+        });
+    } else {
+        console.error('Download cover letter button not found!');
+    }
     
     // API Functions
     async function callAPI(endpoint, method = 'GET', data = null, params = null) {
@@ -373,6 +422,43 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Render markdown preview
         document.getElementById('resume-preview').innerHTML = marked.parse(appState.resumeMarkdown);
+    }
+    
+    // Generate cover letter
+    async function generateCoverLetter(companyName) {
+        // Show loading
+        document.getElementById('cover-letter-loading').style.display = 'block';
+        document.getElementById('cover-letter-content').style.display = 'none';
+        document.getElementById('generate-cover-letter-btn').disabled = true;
+        
+        // Prepare GitHub projects description
+        const projectsDescription = appState.projects.map(project => 
+            `${project.name} (${project.category}): ${project.description}`
+        ).join('\n');
+        
+        // Call the API with all candidate information
+        const response = await callAPI('/generate_cover_letter', 'POST', {
+            company_name: companyName,
+            job_description: appState.personalInfo.job_description,
+            github_projects: projectsDescription,
+            candidate_name: appState.personalInfo.name,
+            Candidate_email: appState.personalInfo.email,
+            Candidate_phone: appState.personalInfo.phone
+        });
+        
+        // Hide loading
+        document.getElementById('cover-letter-loading').style.display = 'none';
+        document.getElementById('generate-cover-letter-btn').disabled = false;
+        
+        if (response && response.cover_letter) {
+            appState.coverLetter = response.cover_letter;
+            document.getElementById('coverLetterText').value = appState.coverLetter;
+            document.getElementById('cover-letter-content').style.display = 'block';
+            document.getElementById('download-cover-letter-btn').disabled = false;
+            showAlert('Cover letter generated successfully!', 'success');
+        } else {
+            showAlert('Failed to generate cover letter. Please try again.', 'danger');
+        }
     }
     
     // Utility Functions
