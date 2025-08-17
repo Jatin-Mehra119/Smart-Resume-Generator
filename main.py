@@ -110,7 +110,7 @@ async def generate_description_endpoint(request: GenerateDescriptionRequest):
         config = types.GenerateContentConfig(max_output_tokens=1550, temperature=0.3)
         response = client.models.generate_content(
             contents=prompt,
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             config=config
         )
         return {"description": response.text.strip()}
@@ -135,7 +135,7 @@ async def generate_category_endpoint(request: GenerateCategoryRequest):
         config = types.GenerateContentConfig(max_output_tokens=650, temperature=0.3)
         response = client.models.generate_content(
             contents=prompt,
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             config=config
         )
         return {"category": response.text.strip()}
@@ -192,7 +192,7 @@ Instructions:
         config = types.GenerateContentConfig(max_output_tokens=6050, temperature=0.3)
         response = client.models.generate_content(
             contents=prompt,
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             config=config
         )
         return {"resume_markdown": response.text}
