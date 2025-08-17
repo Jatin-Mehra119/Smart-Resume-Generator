@@ -68,6 +68,12 @@ class ResumeData(BaseModel):
 class GeneratePDFRequest(BaseModel):
     markdown_text: str
 
+class GenerateCoverLetterRequest(BaseModel):
+    company_name: str
+    job_description: str
+    github_projects: Optional[str] = None
+    candidate_name: Optional[str] = None
+
 # ========== Frontend Routes ==========
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -393,6 +399,25 @@ async def generate_pdf_endpoint(request: GeneratePDFRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"PDF generation failed: {str(e)}"
+        )
+    
+# New Function for generating cover letters with agents for research purposes
+from agent import generate_cover_letter
+
+@app.post("/api/generate_cover_letter")
+async def generate_cover_letter_endpoint(request: GenerateCoverLetterRequest):
+    try:
+        cover_letter = generate_cover_letter(
+            company_name=request.company_name,
+            job_description=request.job_description,
+            github_projects=request.github_projects,
+            candidate_name=request.candidate_name or "Candidate"
+        )
+        return {"cover_letter": cover_letter}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating cover letter: {str(e)}"
         )
 
 # ========== Helper Functions ==========
