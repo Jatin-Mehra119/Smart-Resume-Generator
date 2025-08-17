@@ -402,18 +402,36 @@ async def generate_pdf_endpoint(request: GeneratePDFRequest):
         )
     
 # New Function for generating cover letters with agents for research purposes
-from agent import generate_cover_letter
-
 @app.post("/api/generate_cover_letter")
 async def generate_cover_letter_endpoint(request: GenerateCoverLetterRequest):
     try:
-        cover_letter = generate_cover_letter(
-            company_name=request.company_name,
-            job_description=request.job_description,
-            github_projects=request.github_projects,
-            candidate_name=request.candidate_name or "Candidate"
+        # Prepare the prompt for cover letter generation
+        prompt = f"""Generate a professional cover letter for {request.candidate_name or 'the candidate'} applying to {request.company_name}.
+
+Job Description:
+{request.job_description}
+
+GitHub Projects:
+{request.github_projects or 'No specific projects mentioned'}
+
+Requirements:
+- Address the letter to the hiring manager
+- Mention the company name: {request.company_name}
+- Highlight relevant skills and experiences that match the job description
+- Reference specific projects when relevant
+- Keep it professional and concise (3-4 paragraphs)
+- End with a call to action
+
+Format the letter as a standard business letter."""
+
+        config = types.GenerateContentConfig(max_output_tokens=2000, temperature=0.3)
+        response = client.models.generate_content(
+            contents=prompt,
+            model="gemini-2.0-flash",
+            config=config
         )
-        return {"cover_letter": cover_letter}
+        
+        return {"cover_letter": response.text.strip()}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
