@@ -7,3 +7,7 @@ google-genai==1.7.0
 fastapi
 uvicorn
 python-dotenv
+langchain==0.3.27
+langchain-community==0.3.27
+langchain-google-genai==2.1.9
+langchain-tavily==0.2.11
