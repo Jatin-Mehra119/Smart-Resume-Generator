@@ -73,6 +73,8 @@ class GenerateCoverLetterRequest(BaseModel):
     job_description: str
     github_projects: Optional[str] = None
     candidate_name: Optional[str] = None
+    Candidate_email: Optional[str] = None
+    Candidate_phone: Optional[str] = None
 
 # ========== Frontend Routes ==========
 @app.get("/", response_class=HTMLResponse)
@@ -405,29 +407,43 @@ async def generate_pdf_endpoint(request: GeneratePDFRequest):
 @app.post("/api/generate_cover_letter")
 async def generate_cover_letter_endpoint(request: GenerateCoverLetterRequest):
     try:
+        # Log candidate information
+        print(f"Cover letter request - Name: {request.candidate_name}, Email: {request.Candidate_email}, Phone: {request.Candidate_phone}")
+        
         # Prepare the prompt for cover letter generation
-        prompt = f"""Generate a professional cover letter for {request.candidate_name or 'the candidate'} applying to {request.company_name}.
+        prompt = f"""
+You are an expert career coach and professional writer. 
+Generate a compelling and polished cover letter for {request.candidate_name or 'the candidate'} applying to {request.company_name}.
+
+Candidate Information:
+- Name: {request.candidate_name}
+- Email: {request.Candidate_email}
+- Phone: {request.Candidate_phone}
 
 Job Description:
 {request.job_description}
 
-GitHub Projects:
+GitHub Projects / Experience:
 {request.github_projects or 'No specific projects mentioned'}
 
-Requirements:
-- Address the letter to the hiring manager
-- Mention the company name: {request.company_name}
-- Highlight relevant skills and experiences that match the job description
-- Reference specific projects when relevant
-- Keep it professional and concise (3-4 paragraphs)
-- End with a call to action
+Instructions:
+1. Use a formal business letter format with the candidate’s details at the top.  
+2. Address the letter to the Hiring Manager at {request.company_name}.  
+3. In the introduction: clearly state the role being applied for and show enthusiasm.  
+4. In the body:  
+   - Highlight the candidate’s strongest skills and align them with the job description.  
+   - Reference specific projects (from GitHub or experience) that demonstrate relevant expertise.  
+   - Quantify achievements or outcomes where possible (e.g., accuracy, performance, ranking).  
+5. Keep the letter concise (3-4 short paragraphs, max 300 words).  
+6. End with a confident closing: express eagerness for an interview, thank the employer, and sign off professionally.  
 
-Format the letter as a standard business letter."""
+Output should be ready-to-send, professional, and tailored to {request.company_name}.
+"""
 
-        config = types.GenerateContentConfig(max_output_tokens=2000, temperature=0.3)
+        config = types.GenerateContentConfig(max_output_tokens=6000, temperature=0.3)
         response = client.models.generate_content(
             contents=prompt,
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             config=config
         )
         
